@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🧟 GitHub Graveyard</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="app">
+        <header>
+            <h1>🧟 GitHub Graveyard</h1>
+            <p>Where deleted code goes to rest... or rises again!</p>
+        </header>
+
+        <main>
+            <div class="controls">
+                <input type="text" id="repoInput" placeholder="Enter repo (owner/repo)">
+                <button id="loadRepoBtn">Load Graveyard</button>
+                <button id="resurrectBtn" class="danger">⚡ Resurrect Code</button>
+            </div>
+
+            <div class="stats-container">
+                <div class="stat-card">
+                    <h3>💀 Total Deletions</h3>
+                    <span id="totalDeletions">0</span>
+                </div>
+                <div class="stat-card">
+                    <h3>📁 Files Affected</h3>
+                    <span id="totalFiles">0</span>
+                </div>
+                <div class="stat-card">
+                    <h3>🕯️ Last Deletion</h3>
+                    <span id="lastDeletion">Never</span>
+                </div>
+            </div>
+
+            <div id="graveyard-container">
+                <div id="three-container"></div>
+                <div id="deletion-list">
+                    <h2>Recent Deletions</h2>
+                    <div id="deletions"></div>
+                </div>
+            </div>
+
+            <div id="resurrection-modal" class="modal hidden">
+                <div class="modal-content">
+                    <h2>⚰️ Resurrection Successful!</h2>
+                    <div id="resurrection-details"></div>
+                    <button id="closeModalBtn">Close</button>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
