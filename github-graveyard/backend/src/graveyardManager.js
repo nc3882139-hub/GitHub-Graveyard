@@ -56,7 +56,7 @@ class GraveyardManager {
                 deletions: [],
                 stats: {
                     totalDeletions: 0,
-                    totalFiles: new Set(),
+                    totalFiles: [],
                     lastUpdate: null
                 }
             });
@@ -65,7 +65,14 @@ class GraveyardManager {
         const graveyard = this.graveyards.get(repoId);
         graveyard.deletions.push(deletionData);
         graveyard.stats.totalDeletions += deletionData.lines.length;
-        graveyard.stats.totalFiles.add(...deletionData.stats.filesModified);
+        
+        // Add files to array (avoid duplicates using Set internally)
+        const filesSet = new Set(graveyard.stats.totalFiles);
+        if (deletionData.stats.filesModified) {
+            deletionData.stats.filesModified.forEach(file => filesSet.add(file));
+        }
+        graveyard.stats.totalFiles = Array.from(filesSet);
+        
         graveyard.stats.lastUpdate = new Date();
 
         this.saveGraveyard(repoId);
@@ -73,16 +80,19 @@ class GraveyardManager {
 
     getGraveyardData(repoId) {
         const graveyard = this.graveyards.get(repoId);
-        if (!graveyard) return { deletions: [], stats: { totalDeletions: 0 } };
+        if (!graveyard) {
+            return { 
+                deletions: [], 
+                stats: { 
+                    totalDeletions: 0,
+                    totalFiles: [],
+                    lastUpdate: null
+                } 
+            };
+        }
         
-        // Convert Set to Array for JSON
-        return {
-            ...graveyard,
-            stats: {
-                ...graveyard.stats,
-                totalFiles: Array.from(graveyard.stats.totalFiles)
-            }
-        };
+        // Data is already JSON-serializable (totalFiles is Array, not Set)
+        return graveyard;
     }
 
     async resurrect(repoId) {
