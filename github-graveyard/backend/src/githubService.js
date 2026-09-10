@@ -156,6 +156,9 @@ class GitHubService {
                 });
                 fileSha = existing.data.sha;
             } catch (err) {
+                if (err.response?.status !== 404) {
+                    throw err;
+                }
                 logger.debug('File does not exist yet', { path: safePath });
             }
 

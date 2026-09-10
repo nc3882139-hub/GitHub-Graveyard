@@ -52,29 +52,21 @@ class GitHubAPIError extends APIError {
  * Place this at the end of your route definitions
  */
 function errorHandler(err, req, res, next) {
-    // Log the error
     console.error('[ERROR]', err.name || 'Unknown Error', err.message);
-    
-    // Handle known API errors
+
     if (err instanceof APIError) {
         return res.status(err.statusCode).json({
-            error: err.message,
-            type: err.name,
-            details: err.details,
-            timestamp: new Date().toISOString()
+            success: false,
+            error: err.message
         });
     }
 
-    // Handle unknown errors
-    const statusCode = err.statusCode || 500;
-    const message = process.env.NODE_ENV === 'production' 
-        ? 'Internal server error' 
-        : err.message;
+    const statusCode = err.statusCode >= 400 && err.statusCode < 600 ? err.statusCode : 500;
+    const message = process.env.NODE_ENV === 'production' ? 'Internal server error' : err.message;
 
     res.status(statusCode).json({
-        error: message,
-        type: 'InternalError',
-        timestamp: new Date().toISOString()
+        success: false,
+        error: message || 'Internal server error'
     });
 }
 

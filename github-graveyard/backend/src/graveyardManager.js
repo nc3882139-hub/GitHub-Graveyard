@@ -5,8 +5,7 @@ class GraveyardManager {
     constructor() {
         this.graveyards = new Map();
         this.storagePath = path.join(__dirname, '../data');
-        this.ensureStorageDirectory();
-        this.loadGraveyards();
+        this.ready = this.ensureStorageDirectory().then(() => this.loadGraveyards());
     }
 
     async ensureStorageDirectory() {
@@ -21,8 +20,8 @@ class GraveyardManager {
         try {
             const files = await fs.readdir(this.storagePath);
             for (const file of files) {
-                if (file.endsWith('.json')) {
-                    const repoId = file.replace('.json', '');
+                if (file.endsWith('.json') && !file.endsWith('_resurrection.json')) {
+                    const repoId = decodeURIComponent(file.replace('.json', ''));
                     const data = await fs.readFile(
                         path.join(this.storagePath, file),
                         'utf8'
@@ -40,7 +39,7 @@ class GraveyardManager {
             const data = this.graveyards.get(repoId);
             if (data) {
                 await fs.writeFile(
-                    path.join(this.storagePath, `${repoId}.json`),
+                    path.join(this.storagePath, `${encodeURIComponent(repoId)}.json`),
                     JSON.stringify(data, null, 2)
                 );
             }
@@ -130,7 +129,7 @@ class GraveyardManager {
         }
 
         // Save resurrection data
-        const resurrectionPath = path.join(this.storagePath, `${repoId}_resurrection.json`);
+        const resurrectionPath = path.join(this.storagePath, `${encodeURIComponent(repoId)}_resurrection.json`);
         await fs.writeFile(
             resurrectionPath,
             JSON.stringify(resurrectionData, null, 2)

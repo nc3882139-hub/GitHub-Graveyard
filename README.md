@@ -86,3 +86,15 @@ Developers delete thousands of lines of code every day. Most of it is lost forev
 ---
 
 ## 🏗️ Architecture
+
+## Vercel Deployment
+
+Set the Vercel project root to `github-graveyard`. The included `vercel.json` serves `frontend` as the static output and deploys the functions in `api` with dependencies installed from `backend/package.json`. No build command is required.
+
+Required environment variables are `GITHUB_TOKEN` (server-only GitHub token), `WEBHOOK_SECRET` (server-only webhook secret), and `NODE_ENV=production`. Use a fine-grained GitHub token with repository contents read/write and pull-request permissions for resurrection. Optional variables are `API_AUTH_TOKEN`, `ALLOWED_ORIGINS`, and `LOG_LEVEL`.
+
+The API is same-origin at `/api`; set the GitHub webhook URL to `https://your-domain.vercel.app/api/webhook`, select push events, and use the same `WEBHOOK_SECRET`. Health is available at `https://your-domain.vercel.app/api/health`.
+
+For local development, copy `backend/.env.example` to `backend/.env`, run `cd github-graveyard/backend && npm install && npm start`, then serve `github-graveyard/frontend` with a static server and append `?api=http://localhost:3000/api` to its URL. When the API is unavailable, the frontend intentionally switches to clearly labeled Demo mode.
+
+The JSON graveyard files are suitable for local/demo use only: Vercel functions have ephemeral filesystems and do not provide durable webhook history. Add persistent storage before relying on historical data in production.

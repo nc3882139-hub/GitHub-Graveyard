@@ -289,7 +289,8 @@ window.GraveyardVisualizer = GraveyardVisualizer;
 
 class GitHubGraveyardApp {
     constructor() {
-        this.apiUrl = 'http://localhost:3000/api';
+        const configuredApi = new URLSearchParams(window.location.search).get('api');
+        this.apiUrl = configuredApi || window.GITHUB_GRAVEYARD_API_BASE_URL || '/api';
         this.currentRepo = null;
         this.state = {
             deletions: [],

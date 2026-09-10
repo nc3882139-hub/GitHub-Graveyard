@@ -44,8 +44,17 @@ class ResurrectionService {
         try {
             logger.info('Starting resurrection process', { owner, repo, deletionCount: deletions.length });
 
+            if (deletions.some(deletion => !deletion.previousFileContent || !deletion.filePath)) {
+                return {
+                    success: false,
+                    demo: false,
+                    message: 'Resurrection is unavailable because the archived deletion lacks enough file context to restore the original file safely.',
+                    details: { repo: `${owner}/${repo}`, filesRestored: 0, linesRestored: 0 }
+                };
+            }
+
             const filesByPath = this._groupDeletionsByFile(deletions);
-            const branchName = `resurrection-${Date.now()}`;
+            const branchName = `resurrection-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
             const defaultBranch = await this.githubService.getDefaultBranch(owner, repo);
             const commits = await this.githubService.getLatestCommit(owner, repo, defaultBranch);
 
@@ -57,6 +66,14 @@ class ResurrectionService {
             await this.githubService.createBranch(owner, repo, branchName, baseSha);
 
             const filesUpdated = await this._updateFilesOnBranch(owner, repo, branchName, filesByPath);
+            if (filesUpdated !== Object.keys(filesByPath).length) {
+                return {
+                    success: false,
+                    demo: false,
+                    message: 'Resurrection stopped because one or more files could not be restored. No pull request was created.',
+                    details: { repo: `${owner}/${repo}`, filesRestored: filesUpdated, linesRestored: 0 }
+                };
+            }
             const prNumber = await this.githubService.createPullRequest(
                 owner,
                 repo,

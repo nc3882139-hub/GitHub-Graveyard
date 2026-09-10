@@ -6,8 +6,6 @@
 class RateLimiter {
     constructor() {
         this.requests = new Map();
-        // Clean up old entries every 5 minutes
-        setInterval(() => this._cleanup(), 5 * 60 * 1000);
     }
 
     /**
@@ -18,6 +16,7 @@ class RateLimiter {
      */
     limit(limit = 100, windowMs = 15 * 60 * 1000, message = 'Too many requests, please try again later') {
         return (req, res, next) => {
+            this._cleanup();
             const key = this._getKey(req);
             const now = Date.now();
             
