@@ -11,9 +11,9 @@ class WebhookHandler {
             const commits = payload.commits || [];
             
             for (const commit of commits) {
-                // Get the diff for each commit
+                const owner = payload.repository.owner?.login || payload.repository.owner?.name || 'unknown';
                 const diff = await this.githubService.getCommitDiff(
-                    payload.repository.owner.name,
+                    owner,
                     payload.repository.name,
                     commit.id
                 );

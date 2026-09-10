@@ -3,54 +3,163 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🧟 GitHub Graveyard</title>
+    <meta name="description" content="GitHub Graveyard tracks deleted code, visualizes what was lost, and helps bring important lines back from the dead.">
+    <title>GitHub Graveyard | Where deleted code goes to rest</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
+    <div class="background-grid" aria-hidden="true"></div>
+
     <div id="app">
-        <header>
-            <h1>🧟 GitHub Graveyard</h1>
-            <p>Where deleted code goes to rest... or rises again!</p>
+        <header class="topbar">
+            <div class="brand" aria-label="GitHub Graveyard home">
+                <div class="brand-mark">G</div>
+                <div>
+                    <span class="eyebrow">Developer memorial archive</span>
+                    <h1>GitHub Graveyard</h1>
+                </div>
+            </div>
+            <div id="statusPill" class="status-pill neutral">Awaiting repository</div>
         </header>
 
-        <main>
-            <div class="controls">
-                <input type="text" id="repoInput" placeholder="Enter repo (owner/repo)">
-                <button id="loadRepoBtn">Load Graveyard</button>
-                <button id="resurrectBtn" class="danger">⚡ Resurrect Code</button>
-            </div>
+        <main class="page-shell">
+            <section id="landingSection" class="hero panel">
+                <div class="hero-copy">
+                    <p class="kicker">Where deleted code goes to rest...</p>
+                    <h2>Explore what your repositories left behind.</h2>
+                    <p class="lede">Developers delete code. GitHub Graveyard remembers it.</p>
 
-            <div class="stats-container">
-                <div class="stat-card">
-                    <h3>💀 Total Deletions</h3>
-                    <span id="totalDeletions">0</span>
-                </div>
-                <div class="stat-card">
-                    <h3>📁 Files Affected</h3>
-                    <span id="totalFiles">0</span>
-                </div>
-                <div class="stat-card">
-                    <h3>🕯️ Last Deletion</h3>
-                    <span id="lastDeletion">Never</span>
-                </div>
-            </div>
+                    <form id="repoForm" class="repo-form" novalidate>
+                        <label class="repo-field" for="repoInput">
+                            <span class="field-icon" aria-hidden="true">GH</span>
+                            <input id="repoInput" name="repo" type="text" placeholder="owner/repository-name" autocomplete="off" spellcheck="false" aria-label="Repository name in owner/repository format" />
+                        </label>
+                        <button id="loadRepoBtn" class="primary-btn" type="submit">Enter Graveyard</button>
+                    </form>
 
-            <div id="graveyard-container">
-                <div id="three-container"></div>
-                <div id="deletion-list">
-                    <h2>Recent Deletions</h2>
-                    <div id="deletions"></div>
+                    <div class="form-meta">
+                        <span id="repoHint">Enter a repository to awaken its graveyard.</span>
+                        <span id="repoValidation" class="validation-message" aria-live="polite"></span>
+                    </div>
                 </div>
-            </div>
 
-            <div id="resurrection-modal" class="modal hidden">
-                <div class="modal-content">
-                    <h2>⚰️ Resurrection Successful!</h2>
-                    <div id="resurrection-details"></div>
-                    <button id="closeModalBtn">Close</button>
+                <div class="hero-visual" aria-hidden="true">
+                    <div class="orb orb-violet"></div>
+                    <div class="orb orb-green"></div>
+                    <div class="scanline"></div>
+                    <div class="floating-code">
+                        <span>git revert --no-edit</span>
+                        <span>const ghost = lostCode</span>
+                        <span>return resurrect();</span>
+                    </div>
                 </div>
-            </div>
+            </section>
+
+            <section id="dashboard" class="dashboard hidden" aria-live="polite">
+                <div class="stat-grid">
+                    <article class="stat-card">
+                        <span class="stat-kicker">Lines lost</span>
+                        <strong id="totalDeletions" class="stat-value">0</strong>
+                        <small id="deltaDelete">0 this week</small>
+                    </article>
+                    <article class="stat-card">
+                        <span class="stat-kicker">Haunted files</span>
+                        <strong id="totalFiles" class="stat-value">0</strong>
+                        <small id="fileDelta">Across the archive</small>
+                    </article>
+                    <article class="stat-card">
+                        <span class="stat-kicker">Death count</span>
+                        <strong id="commitDeaths" class="stat-value">0</strong>
+                        <small id="commitDelta">Tracked commits</small>
+                    </article>
+                    <article class="stat-card">
+                        <span class="stat-kicker">Last death</span>
+                        <strong id="lastDeletion" class="stat-value">Never</strong>
+                        <small id="lastDeletionMeta">No entries yet</small>
+                    </article>
+                </div>
+
+                <div class="content-grid">
+                    <section class="panel graveyard-panel">
+                        <div class="panel-header">
+                            <div>
+                                <span class="eyebrow">Repository signal</span>
+                                <h3 id="repoNameLabel">owner/repo</h3>
+                            </div>
+                            <button id="refreshBtn" class="ghost-btn" type="button">Refresh</button>
+                        </div>
+                        <div id="three-container" aria-label="3D graveyard visualization"></div>
+                    </section>
+
+                    <aside id="memoryPanel" class="panel memory-panel" aria-live="polite">
+                        <div class="panel-header compact">
+                            <div>
+                                <span class="eyebrow">Memory panel</span>
+                                <h3>Selected ghost</h3>
+                            </div>
+                        </div>
+                        <div id="memoryContent" class="memory-content empty-state">
+                            Select a deletion to inspect the lost code.
+                        </div>
+                        <button id="resurrectBtn" class="primary-btn danger-btn" type="button">Resurrect code</button>
+                    </aside>
+                </div>
+
+                <div class="panel-grid">
+                    <section class="panel list-panel">
+                        <div class="panel-header list-header">
+                            <div>
+                                <span class="eyebrow">Archive</span>
+                                <h3>Recent deletions</h3>
+                            </div>
+                            <div class="toolbar">
+                                <input id="searchInput" type="search" placeholder="Search files or messages" aria-label="Search deleted files" />
+                            </div>
+                        </div>
+
+                        <div class="chip-group" aria-label="Filter deletions">
+                            <button class="filter-btn active" type="button" data-range="all">All</button>
+                            <button class="filter-btn" type="button" data-range="today">Today</button>
+                            <button class="filter-btn" type="button" data-range="week">This week</button>
+                            <button class="filter-btn" type="button" data-range="large">Large deletions</button>
+                        </div>
+
+                        <div id="deletionList" class="deletion-list"></div>
+                    </section>
+
+                    <section class="panel analytics-panel">
+                        <div class="panel-header compact">
+                            <div>
+                                <span class="eyebrow">Analytics</span>
+                                <h3>Deletion trends</h3>
+                            </div>
+                        </div>
+                        <div id="analytics" class="analytics"></div>
+                    </section>
+                </div>
+
+                <section class="panel timeline-panel">
+                    <div class="panel-header compact">
+                        <div>
+                            <span class="eyebrow">Chronology</span>
+                            <h3>Death timeline</h3>
+                        </div>
+                    </div>
+                    <div id="timeline" class="timeline"></div>
+                </section>
+            </section>
         </main>
+    </div>
+
+    <div id="toastContainer" class="toast-container" aria-live="polite" aria-atomic="true"></div>
+
+    <div id="resurrectionModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+        <div class="modal-content">
+            <p class="modal-kicker">Resurrection state</p>
+            <h2 id="modalTitle">Code recovered</h2>
+            <div id="modalBody" class="modal-body"></div>
+            <button id="closeModalBtn" class="primary-btn" type="button">Close</button>
+        </div>
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
