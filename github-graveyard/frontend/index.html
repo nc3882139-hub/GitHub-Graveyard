@@ -3,38 +3,55 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="GitHub Graveyard tracks deleted code, visualizes what was lost, and helps bring important lines back from the dead.">
-    <title>GitHub Graveyard | Where deleted code goes to rest</title>
+    <meta name="description" content="GitHub Graveyard is a cinematic archive for deleted code, helping developers explore what was lost and bring it back from the dead.">
+    <meta name="theme-color" content="#050505">
+    <title>GitHub Graveyard — Where Deleted Code Lives Again</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div class="background-grid" aria-hidden="true"></div>
 
     <div id="app">
-        <header class="topbar">
+        <header class="topbar" aria-label="Main navigation">
             <div class="brand" aria-label="GitHub Graveyard home">
                 <div class="brand-mark">G</div>
-                <div>
+                <div class="brand-copy">
                     <span class="eyebrow">Developer memorial archive</span>
                     <h1>GitHub Graveyard</h1>
                 </div>
             </div>
-            <div id="statusPill" class="status-pill neutral">Awaiting repository</div>
+
+            <nav class="main-nav" aria-label="Section navigation">
+                <a href="#landingSection">Home</a>
+                <a href="#dashboard">Graveyard</a>
+                <a href="#analytics">Analytics</a>
+                <a href="#memoryPanel">Memories</a>
+            </nav>
+
+            <div class="topbar-actions">
+                <div id="statusPill" class="status-pill neutral">Awaiting repository</div>
+                <button class="nav-cta" type="button">Resurrect</button>
+            </div>
         </header>
 
         <main class="page-shell">
             <section id="landingSection" class="hero panel">
                 <div class="hero-copy">
                     <p class="kicker">Where deleted code goes to rest...</p>
-                    <h2>Explore what your repositories left behind.</h2>
-                    <p class="lede">Developers delete code. GitHub Graveyard remembers it.</p>
+                    <h2>
+                        <span class="line">Where</span>
+                        <span class="line">deleted</span>
+                        <span class="line accent">code</span>
+                        <span class="line">lives again</span>
+                    </h2>
+                    <p class="lede">A cinematic archive for deleted GitHub code — visualize what disappeared, trace its history, and resurrect what deserves another life.</p>
 
                     <form id="repoForm" class="repo-form" novalidate>
                         <label class="repo-field" for="repoInput">
                             <span class="field-icon" aria-hidden="true">GH</span>
-                            <input id="repoInput" name="repo" type="text" placeholder="owner/repository-name" autocomplete="off" spellcheck="false" aria-label="Repository name in owner/repository format" />
+                            <input id="repoInput" name="repo" type="text" placeholder="github.com/owner/repository" autocomplete="off" spellcheck="false" aria-label="Repository name in owner/repository format" />
                         </label>
-                        <button id="loadRepoBtn" class="primary-btn" type="submit">Enter Graveyard</button>
+                        <button id="loadRepoBtn" class="primary-btn" type="submit">Explore the Graveyard</button>
                     </form>
 
                     <div class="form-meta">
@@ -52,10 +69,26 @@
                         <span>const ghost = lostCode</span>
                         <span>return resurrect();</span>
                     </div>
+                    <div class="hero-side-indicators" aria-label="Section list">
+                        <a href="#landingSection" class="side-link active"><span>01</span><span>Graveyard</span></a>
+                        <a href="#dashboard" class="side-link"><span>02</span><span>Memories</span></a>
+                        <a href="#analytics" class="side-link"><span>03</span><span>Analytics</span></a>
+                        <a href="#resurrectionModal" class="side-link"><span>04</span><span>Resurrection</span></a>
+                    </div>
+                </div>
+
+                <div class="scroll-indicator" aria-label="Scroll to explore">
+                    <span>Scroll to explore</span>
+                    <div class="scroll-arrow">↓</div>
                 </div>
             </section>
 
             <section id="dashboard" class="dashboard hidden" aria-live="polite">
+                <div class="section-heading">
+                    <span class="eyebrow">The archive</span>
+                    <h3>Every deletion leaves a memory.</h3>
+                </div>
+
                 <div class="stat-grid">
                     <article class="stat-card">
                         <span class="stat-kicker">Lines lost</span>
@@ -127,14 +160,14 @@
                         <div id="deletionList" class="deletion-list"></div>
                     </section>
 
-                    <section class="panel analytics-panel">
+                    <section id="analytics" class="panel analytics-panel">
                         <div class="panel-header compact">
                             <div>
                                 <span class="eyebrow">Analytics</span>
                                 <h3>Deletion trends</h3>
                             </div>
                         </div>
-                        <div id="analytics" class="analytics"></div>
+                        <div class="analytics"></div>
                     </section>
                 </div>
 

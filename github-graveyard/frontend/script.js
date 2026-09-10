@@ -569,8 +569,9 @@ class GitHubGraveyardApp {
             return total;
         });
         const maxBar = Math.max(...bars, 1);
+        const analyticsHost = document.querySelector('#analytics .analytics') || document.getElementById('analytics');
 
-        document.getElementById('analytics').innerHTML = `
+        analyticsHost.innerHTML = `
             <div class="analytics-card">
                 <div class="analytics-label"><span>Death frequency</span><strong>${this.formatCounter(Math.max(...bars, 0))}</strong></div>
                 <div class="bar-chart">
