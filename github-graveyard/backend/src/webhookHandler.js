@@ -23,7 +23,7 @@ class WebhookHandler {
                 
                 // Store in graveyard if there are deletions
                 if (deletedData.deletedLines.length > 0) {
-                    graveyardManager.addDeletion(repoName, {
+                    await graveyardManager.addDeletion(repoName, {
                         commitId: commit.id,
                         message: commit.message,
                         author: commit.author?.name || 'Unknown',

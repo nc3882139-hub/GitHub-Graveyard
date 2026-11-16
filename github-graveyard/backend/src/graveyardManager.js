@@ -1,54 +1,78 @@
-const fs = require('fs').promises;
-const path = require('path');
+const createStorage = require('./storage');
+
+function getRetentionDays(value) {
+    const days = value === undefined ? 30 : Number(value);
+    if (!Number.isInteger(days) || days < 1) {
+        throw new Error('RETENTION_DAYS must be a positive integer');
+    }
+    return days;
+}
 
 class GraveyardManager {
-    constructor() {
+    constructor(storage = createStorage(), retentionDays = getRetentionDays(process.env.RETENTION_DAYS)) {
         this.graveyards = new Map();
-        this.storagePath = path.join(__dirname, '../data');
-        this.ready = this.ensureStorageDirectory().then(() => this.loadGraveyards());
+        this.storage = storage;
+        this.retentionDays = retentionDays;
+        this.ready = this.loadGraveyards();
     }
 
-    async ensureStorageDirectory() {
-        try {
-            await fs.mkdir(this.storagePath, { recursive: true });
-        } catch (error) {
-            console.error('Error creating storage directory:', error);
+    _pruneDeletions(graveyard, now = Date.now()) {
+        const cutoff = now - this.retentionDays * 24 * 60 * 60 * 1000;
+        graveyard.deletions = graveyard.deletions.filter(deletion => {
+            const timestamp = new Date(deletion.timestamp).getTime();
+            return Number.isFinite(timestamp) && timestamp >= cutoff;
+        });
+
+        const files = new Set();
+        let totalDeletions = 0;
+        for (const deletion of graveyard.deletions) {
+            totalDeletions += Array.isArray(deletion.lines) ? deletion.lines.length : 0;
+            for (const file of deletion.stats?.filesModified || []) {
+                files.add(file);
+            }
+            for (const line of Array.isArray(deletion.lines) ? deletion.lines : []) {
+                if (line.file) {
+                    files.add(line.file);
+                }
+            }
         }
+
+        graveyard.stats = {
+            totalDeletions,
+            totalFiles: Array.from(files),
+            lastUpdate: graveyard.deletions.length
+                ? graveyard.deletions.reduce((latest, deletion) => (
+                    new Date(deletion.timestamp) > latest ? new Date(deletion.timestamp) : latest
+                ), new Date(0))
+                : null
+        };
     }
 
     async loadGraveyards() {
-        try {
-            const files = await fs.readdir(this.storagePath);
-            for (const file of files) {
-                if (file.endsWith('.json') && !file.endsWith('_resurrection.json')) {
-                    const repoId = decodeURIComponent(file.replace('.json', ''));
-                    const data = await fs.readFile(
-                        path.join(this.storagePath, file),
-                        'utf8'
-                    );
-                    this.graveyards.set(repoId, JSON.parse(data));
-                }
+        const records = await this.storage.list();
+        for (const record of records) {
+            const graveyard = record.value;
+            if (!graveyard || !Array.isArray(graveyard.deletions)) {
+                continue;
             }
-        } catch (error) {
-            console.error('Error loading graveyards:', error);
+
+            graveyard.repoId = graveyard.repoId || record.key;
+            graveyard.stats = graveyard.stats || {};
+            this._pruneDeletions(graveyard);
+            this.graveyards.set(graveyard.repoId, graveyard);
+            await this.storage.save(graveyard.repoId, graveyard);
         }
     }
 
     async saveGraveyard(repoId) {
-        try {
-            const data = this.graveyards.get(repoId);
-            if (data) {
-                await fs.writeFile(
-                    path.join(this.storagePath, `${encodeURIComponent(repoId)}.json`),
-                    JSON.stringify(data, null, 2)
-                );
-            }
-        } catch (error) {
-            console.error('Error saving graveyard:', error);
+        const data = this.graveyards.get(repoId);
+        if (data) {
+            await this.storage.save(repoId, data);
         }
     }
 
-    addDeletion(repoId, deletionData) {
+    async addDeletion(repoId, deletionData) {
+        await this.ready;
         if (!this.graveyards.has(repoId)) {
             this.graveyards.set(repoId, {
                 repoId,
@@ -62,55 +86,44 @@ class GraveyardManager {
         }
 
         const graveyard = this.graveyards.get(repoId);
+        this._pruneDeletions(graveyard);
         graveyard.deletions.push(deletionData);
-        graveyard.stats.totalDeletions += deletionData.lines.length;
-        
-        // Add files to array (avoid duplicates using Set internally)
-        const filesSet = new Set(graveyard.stats.totalFiles);
-        if (deletionData.stats.filesModified) {
-            deletionData.stats.filesModified.forEach(file => filesSet.add(file));
-        }
-        graveyard.stats.totalFiles = Array.from(filesSet);
-        
-        graveyard.stats.lastUpdate = new Date();
-
-        this.saveGraveyard(repoId);
+        this._pruneDeletions(graveyard);
+        await this.saveGraveyard(repoId);
     }
 
     getGraveyardData(repoId) {
         const graveyard = this.graveyards.get(repoId);
         if (!graveyard) {
-            return { 
-                deletions: [], 
-                stats: { 
+            return {
+                deletions: [],
+                stats: {
                     totalDeletions: 0,
                     totalFiles: [],
                     lastUpdate: null
-                } 
+                }
             };
         }
-        
-        // Data is already JSON-serializable (totalFiles is Array, not Set)
+
         return graveyard;
     }
 
     async resurrect(repoId) {
+        await this.ready;
         const graveyard = this.graveyards.get(repoId);
         if (!graveyard || graveyard.deletions.length === 0) {
             return { success: false, message: 'Nothing to resurrect' };
         }
 
-        // Get the last 24 hours of deletions
         const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
         const recentDeletions = graveyard.deletions.filter(
-            d => new Date(d.timestamp) > twentyFourHoursAgo
+            deletion => new Date(deletion.timestamp) > twentyFourHoursAgo
         );
 
         if (recentDeletions.length === 0) {
             return { success: false, message: 'No deletions in the last 24 hours' };
         }
 
-        // Create a resurrection report
         const resurrectionData = {
             timestamp: new Date(),
             restoredLines: [],
@@ -128,19 +141,19 @@ class GraveyardManager {
             }
         }
 
-        // Save resurrection data
-        const resurrectionPath = path.join(this.storagePath, `${encodeURIComponent(repoId)}_resurrection.json`);
-        await fs.writeFile(
-            resurrectionPath,
-            JSON.stringify(resurrectionData, null, 2)
-        );
+        const files = Array.from(resurrectionData.files);
+        await this.storage.save(`${repoId}_resurrection`, {
+            timestamp: resurrectionData.timestamp,
+            restoredLines: resurrectionData.restoredLines,
+            files
+        });
 
         return {
             success: true,
             message: `Resurrected ${resurrectionData.restoredLines.length} lines from ${resurrectionData.files.size} files`,
             data: {
                 ...resurrectionData,
-                files: Array.from(resurrectionData.files)
+                files
             }
         };
     }
